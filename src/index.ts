@@ -72,6 +72,6 @@ function replaceKeywords(text: string, keywords: string[]) {
       mint.filter('需要验证的文本')
 
 
-    })
+    }, true)
 
 }
