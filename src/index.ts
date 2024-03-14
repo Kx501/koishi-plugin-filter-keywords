@@ -1,4 +1,4 @@
-import { Context, Schema, h, Dict, Session } from 'koishi'
+import { Context, Schema, h, Dict, Session, Logger } from 'koishi'
 import Mint from 'mint-filter'
 
 
@@ -27,6 +27,7 @@ export const Config: Schema<Config> = Schema.object({
 })
 
 export function apply(ctx: Context, config: Config) {
+  const logger = new Logger('filter-keywords')
 
 
   function processKeywords(inputString: string) {
@@ -63,12 +64,13 @@ type Transformer = ((
     let result: any;
     let rules: Transformer;
     const text = session.content;
+    logger.info(ctx)
 
     if (config.过滤关键词) {
       const result = filterKeywords(text, keywordsArray)
     } else if (config.替换关键词) {
-      h.transform(replaceKeywords(text, keywordsArray), rules){
-      };
+      // h.transform(replaceKeywords(text, keywordsArray), rules){
+      // };
     } else if (config.撤回消息) {
       
     } else if (config.不响应消息) {
@@ -85,27 +87,27 @@ type Transformer = ((
 
   }, true)
 
-  ctx.middleware(
-    async (session, next) => {
-      const text = session.content;
+  // ctx.middleware(
+  //   async (session, next) => {
+  //     const text = session.content;
 
-      if (config.过滤关键词) {
-        filterKeywords(text, keywordsArray)
-      } else if (config.替换关键词) {
-        replaceKeywords(text, keywordsArray)
-      } else if (config.撤回消息) {
+  //     if (config.过滤关键词) {
+  //       filterKeywords(text, keywordsArray)
+  //     } else if (config.替换关键词) {
+  //       replaceKeywords(text, keywordsArray)
+  //     } else if (config.撤回消息) {
         
-      } else if (config.不响应消息) {
+  //     } else if (config.不响应消息) {
 
-      } return next();
+  //     } return next();
 
-      // 敏感词数组
-      const mint = new Mint(['敏感词数组'])
+  //     // 敏感词数组
+  //     const mint = new Mint(['敏感词数组'])
 
-      // 基本使用
-      mint.filter('需要验证的文本')
+  //     // 基本使用
+  //     mint.filter('需要验证的文本')
 
 
-    }, true)
+  //   }, true)
 
 }
