@@ -1,4 +1,4 @@
-import { Context, Schema } from 'koishi'
+import { Context, Schema, h, Dict, Session } from 'koishi'
 import Mint from 'mint-filter'
 
 
@@ -49,7 +49,41 @@ function replaceKeywords(text: string, keywords: string[]) {
   return mint.filter(text, { replace: true }).text;//.replace(/\*+/g, replaceChar);
 }
 
+type Fragment = Element[]
+type Transformer = ((
+  attrs: Dict,
+  children: Element[],
+  session: Session,
+) => Fragment)
+
+
+
   const keywordsArray = processKeywords(config.关键词);
+  ctx.on('before-parse', (content, session) => {
+    let result: any;
+    let rules: Transformer;
+    const text = session.content;
+
+    if (config.过滤关键词) {
+      const result = filterKeywords(text, keywordsArray)
+    } else if (config.替换关键词) {
+      h.transform(replaceKeywords(text, keywordsArray), rules){
+      };
+    } else if (config.撤回消息) {
+      
+    } else if (config.不响应消息) {
+
+    }
+
+    // 敏感词数组
+    const mint = new Mint(['敏感词数组'])
+
+    // 基本使用
+    mint.filter('需要验证的文本')
+    return result
+
+
+  }, true)
 
   ctx.middleware(
     async (session, next) => {

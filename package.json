@@ -16,5 +16,8 @@
   ],
   "peerDependencies": {
     "koishi": "^4.17.1"
+  },
+  "dependencies": {
+    "mint-filter": "^4.0.3"
   }
 }
