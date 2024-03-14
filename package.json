@@ -1,5 +1,5 @@
 {
-  "name": "koishi-plugin-filter-keywords",
+  "name": "@kxy051/koishi-plugin-filter-keywords",
   "description": "从消息中过滤关键词",
   "version": "0.0.1",
   "main": "lib/index.js",

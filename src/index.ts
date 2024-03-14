@@ -21,7 +21,7 @@ export const Config: Schema<Config> = Schema.object({
   // 自定义替换文本: Schema.string().default('*').description('支持字符串。'),
   不响应消息: Schema.boolean().default(false).description('触发关键词没有任何响应。'),
   撤回消息: Schema.boolean().default(true).description('需要管理员权限。'),
-  关键词: Schema.string().role('textarea', { rows: [6, 100] }).description('用中/英文逗号分割。'),
+  关键词: Schema.string().role('textarea', { rows: [3, 100] }).description('用中/英文逗号分割。'),
   测试回复: Schema.boolean().default(true).description('机器人会重复过滤后的文本。'),
   自定义分隔符: Schema.string().default(', ').description('自定义处理后文本的分隔符。'),
 })
