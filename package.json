@@ -12,7 +12,7 @@
     "dist"
   ],
   "license": "MIT",
-"homepage": "https://github.com/Kxy051/koishi-plugin-filter-keywords",
+  "homepage": "https://github.com/Kxy051/koishi-plugin-filter-keywords",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kxy051/koishi-plugin-filter-keywords.git"
@@ -26,6 +26,8 @@
     "koishi": "^4.17.1",
     "mint-filter": "^4.0.3"
   },
-  "preview": true,
-  "hidden": true
+  "koishi": {
+    "preview": true,
+    "hidden": true
+  }
 }
