@@ -6,12 +6,15 @@ export const name = 'filter-keywords'
 
 export const usage = `
   只测试了QQ频道，有空再改。
+
   使用前确保填入关键词。
+
   基于Aho–Corasick算法实现的敏感词过滤。
 `
 
 export interface Config {
   关键词: string,
+  生效范围: any,
   过滤关键词: boolean,
   替换关键词: boolean,
   自定义替换文本: string,
@@ -27,6 +30,7 @@ export interface Config {
 
 export const Config: Schema<Config> = Schema.object({
   关键词: Schema.string().role('textarea', { rows: [3, 100] }).description('用中/英文逗号隔开。'),
+  生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户id。').required(),
   过滤关键词: Schema.boolean().default(true).description('从消息中删除关键词。'),
   替换关键词: Schema.boolean().default(false).description('将关键词替换为“*”。'),
   自定义替换文本: Schema.string().default('*').description('只支持字符串。'),
@@ -48,12 +52,10 @@ export function apply(ctx: Context, config: Config) {
   const keywords = processKeywords(config.关键词);
 
   function processKeywords(inputString: string) {
-    if (inputString.length > 0) {
-      // 按逗号分割
-      const keywordsArray = inputString.split(/[,，]/);
-      // 去除最外层空格
-      const processedKeywords = keywordsArray.map(keyword => keyword.trim());
-      return processedKeywords;
+    if (inputString !== '') {
+      // 使用正则表达式一次性去除所有空格并按逗号分割
+      const keywordsArray = inputString.replace(/\s+/g, '').split(/[,，]/);
+      return keywordsArray;
     } else {
       logger.error('错误：过滤前确保填入关键词！')
       return ['无关键词']
@@ -87,27 +89,35 @@ export function apply(ctx: Context, config: Config) {
     if (config.撤回消息 && triggerFlag > 0) {
       session.bot.deleteMessage(session.channelId, session.messageId)
     }
+
+    flag = false;
     return content
   }
 
+  const table = new Set(config.生效范围);
+  let flag = false;
 
   ctx.on('before-parse', (content, session,) => {
     // const elements = h.select(content, 'text')
     // logger.debug('原始消息: ', elements)
-
+    // 遍历 session 中的属性值，如果在 table1 中找到了匹配项，设置 flag 为 true
+    if (table.has(session?.platform || table.has(session?.guildId) || table.has(session?.channelId) || table.has(session?.userId))) {
+      flag = true;
+    }
 
     logger.debug('处理前: ', content)
 
+    if (flag) {
+      if (config.过滤关键词) {
+        logger.debug('过滤......')
+        const result = filterKeywords(content, keywords)
+        content = prompt(result, session, content)
 
-    if (config.过滤关键词) {
-      logger.debug('过滤......')
-      const result = filterKeywords(content, keywords)
-      content = prompt(result, session, content)
-
-    } else if (config.替换关键词) {
-      logger.debug('替换......')
-      const result = replaceKeywords(content, keywords)
-      content = prompt(result, session, content)
+      } else if (config.替换关键词) {
+        logger.debug('替换......')
+        const result = replaceKeywords(content, keywords)
+        content = prompt(result, session, content)
+      }
     }
 
     // if (quote?.content) {
