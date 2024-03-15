@@ -1,7 +1,10 @@
 {
   "name": "@kxy051/koishi-plugin-filter-keywords",
-  "description": "从消息中过滤关键词",
-  "version": "0.0.1",
+  "description": "对解析前的消息进行关键词过滤。",
+  "contributors": [
+    "Kxy051 <a2483654847@gmail.com>"
+  ],
+  "version": "1.0.0-alpha.1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -19,5 +22,7 @@
   },
   "dependencies": {
     "mint-filter": "^4.0.3"
-  }
+  },
+  "preview": true,
+  "hidden": true
 }
