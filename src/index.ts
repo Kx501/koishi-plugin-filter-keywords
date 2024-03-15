@@ -4,7 +4,11 @@ import Mint from 'mint-filter'
 
 export const name = 'filter-keywords'
 
-export const usage = '目前只支持参数在末尾的情况，有空再改。'
+export const usage = `
+  只测试了QQ频道，有空再改。
+  使用前确保填入关键词。
+  基于Aho–Corasick算法实现的敏感词过滤。
+`
 
 export interface Config {
   关键词: string,
@@ -12,8 +16,8 @@ export interface Config {
   替换关键词: boolean,
   自定义替换文本: string,
   // 不响应: boolean,
-  撤回消息: boolean,
   触发提示: boolean,
+  撤回消息: boolean,
   自定义提示文本: string,
   // 排除的指令: any,
   // 多位置支持: boolean,
@@ -27,8 +31,8 @@ export const Config: Schema<Config> = Schema.object({
   替换关键词: Schema.boolean().default(false).description('将关键词替换为“*”。'),
   自定义替换文本: Schema.string().default('*').description('只支持字符串。'),
   // 不响应: Schema.boolean().default(false).description('触发关键词不响应消息。'),
-  撤回消息: Schema.boolean().default(false).description('需要管理员权限。'),
   触发提示: Schema.boolean().default(false).description('触发后不执行指令，并且提示。'),
+  撤回消息: Schema.boolean().default(false).description('需要管理员权限。'),
   自定义提示文本: Schema.string().default('触发敏感词了哦~').description('自定义提示消息。'),
   // 多位置支持: Schema.boolean().default(false).description('支持传入指令的参数有多个空格隔开的情况。'),
   // 参数位置: Schema.boolean().default(false).description('触发后提示。'),
@@ -51,13 +55,14 @@ export function apply(ctx: Context, config: Config) {
       const processedKeywords = keywordsArray.map(keyword => keyword.trim());
       return processedKeywords;
     } else {
-      logger.error('过滤前确保填入关键词！')
+      logger.error('错误：过滤前确保填入关键词！')
+      return ['无关键词']
     }
   }
 
   // 过滤关键词
   function filterKeywords(text: string, keywords: string[]) {
-    const mint = new Mint(keywords, { customCharacter: '' });
+    const mint = new Mint(keywords, { customCharacter: ' ' });
     // logger.debug(mint)
     return mint.filter(text, { replace: true });
   }
