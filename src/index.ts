@@ -30,7 +30,7 @@ export interface Config {
 
 export const Config: Schema<Config> = Schema.object({
   关键词: Schema.string().role('textarea', { rows: [3, 100] }).description('用中/英文逗号隔开。'),
-  生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户id。').required(),
+  生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户id，前面的会覆盖后面的。').required(),
   过滤关键词: Schema.boolean().default(true).description('从消息中删除关键词。'),
   替换关键词: Schema.boolean().default(false).description('将关键词替换为“*”。'),
   自定义替换文本: Schema.string().default('*').description('只支持字符串。'),
@@ -99,7 +99,7 @@ export function apply(ctx: Context, config: Config) {
 
   ctx.on('before-parse', (content, session,) => {
     // const elements = h.select(content, 'text')
-    // logger.debug('原始消息: ', elements)
+    logger.debug('原始消息: ', session)
     // 遍历 session 中的属性值，如果在 table1 中找到了匹配项，设置 flag 为 true
     if (table.has(session?.platform || table.has(session?.guildId) || table.has(session?.channelId) || table.has(session?.userId))) {
       flag = true;
