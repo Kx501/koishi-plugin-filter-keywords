@@ -74,13 +74,14 @@ export function apply(ctx: Context, config: Config) {
 
     // const triggerLength = result.words.length
     time2 = new Date();
+    const tempResult = result.text
 
     if (config.触发提示 && flag) {
       logger.debug('不执行指令......')
       session.send(h('at', { id: session.userId }) + config.自定义提示文本)
       content = ''
     } else
-      content = result.text
+      content = tempResult
 
     if (config.撤回消息 && flag)
       session.bot.deleteMessage(session.channelId, session.messageId)
@@ -88,7 +89,7 @@ export function apply(ctx: Context, config: Config) {
     // 调试开关
     if (config.回复调试信息 && flag) {
       logger.debug('提示......')
-      const debugStr = `处理结果：${result.text}\n耗时：${time2 - time1} ms`
+      const debugStr = `处理结果：${tempResult}\n耗时：${time2 - time1} ms`
       session.send(debugStr)
     }
 
@@ -154,12 +155,31 @@ export function apply(ctx: Context, config: Config) {
   //// Aho–Corasick
   // 过滤
   function ahoFilt(text: string, keywords: string[]) {
-    const mint = new Mint(keywords, { customCharacter: '{)]' });
-    const tempResult = mint.filter(text, { replace: true });
-    tempResult.text = tempResult.text.replace(/\{\)\]/g, '');
-    return tempResult;
+    // 使用正则表达式分割文本为句子，保留符号
+    const sentences = text.split(/([^\u4e00-\u9fa5a-zA-Z0-9]+)/).filter(Boolean); // 过滤空字符串
+
+    // 每两个元素拼接
+    const mergedSentences = sentences.reduce((acc, curr, index) => {
+      if (index % 2 === 0) {
+        const mergedSentence = curr + (sentences[index + 1] || ''); // 若奇数个元素，最后一个元素为空字符串
+        acc.push(mergedSentence);
+      }
+      return acc;
+    }, []);
+
+    // 使用 Aho-Corasick 算法验证每个句子
+    const mint = new Mint(keywords);
+    const filteredSentences = mergedSentences.filter(sentence => {
+      const status = mint.verify(sentence);
+      return status; // 返回 true 表示句子通过验证
+    });
+
+    // 将过滤后的句子拼接为文本
+    const filteredText = filteredSentences.join('');
+    // 返回过滤后的文本
+    return { text: filteredText };
   }
-  
+
   // 替换
   function ahoRepl(text: string, keywords: string[]) {
     const mint = new Mint(keywords, { customCharacter: `${config.自定义替换文本}` });
@@ -172,12 +192,14 @@ export function apply(ctx: Context, config: Config) {
   function regFilt(text: string, keywords: string[]) {
     // 正则分割文本，保留符号
     const sentences = text.split(/([^\u4e00-\u9fa5a-zA-Z0-9]+)/).filter(Boolean);
-    // 数组每两个元素拼接
-    const mergedSentences = [];
-    for (let i = 0; i < sentences.length; i += 2) {
-      const mergedSentence = sentences[i] + (sentences[i + 1] || ''); // 若奇数个元素，最后一个元素为空字符串
-      mergedSentences.push(mergedSentence);
-    }
+    // 每两个元素拼接
+    const mergedSentences = sentences.reduce((acc, curr, index) => {
+      if (index % 2 === 0) {
+        const mergedSentence = curr + (sentences[index + 1] || ''); // 若奇数个元素，最后一个元素为空字符串
+        acc.push(mergedSentence);
+      }
+      return acc;
+    }, []);
     // 过滤
     const filteredSentences = mergedSentences.filter(sentence => {
       return !keywords.some(keyword => new RegExp(keyword, 'gi').test(sentence));
@@ -186,7 +208,7 @@ export function apply(ctx: Context, config: Config) {
     const filteredText = filteredSentences.join('');
     return { text: filteredText };
   }
-  
+
   function regRepl(text: string, keywords: string[]) {
     // 替换关键词
     const filteredText = keywords.reduce((acc, keyword) => {
@@ -196,8 +218,8 @@ export function apply(ctx: Context, config: Config) {
     // 返回替换后的文本
     return { text: filteredText };
   }
-  
-  
+
+
 
   //// 普通数组
   function arrFilt(text: string, keywords: string[]) {
