@@ -159,6 +159,7 @@ export function apply(ctx: Context, config: Config) {
     tempResult.text = tempResult.text.replace(/\{\)\]/g, '');
     return tempResult;
   }
+  
   // 替换
   function ahoRepl(text: string, keywords: string[]) {
     const mint = new Mint(keywords, { customCharacter: `${config.自定义替换文本}` });
