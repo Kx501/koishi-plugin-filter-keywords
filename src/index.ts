@@ -1,4 +1,4 @@
-import { Context, Schema, h, Dict, Session, Logger, Argv } from 'koishi'
+import { Context, Schema, h, Dict, Session, Logger, Argv, Time } from 'koishi'
 import Mint from 'mint-filter'
 
 
@@ -9,13 +9,15 @@ export const usage = `
 
   使用前确保填入关键词。
 
-  基于Aho–Corasick算法实现的敏感词过滤。
+  过滤/替换，有些方案没写。
 `
 
 export interface Config {
   关键词: string,
   生效范围: any,
-  过滤关键词: boolean,
+  过滤方案: any,
+  // 私聊生效: boolean,
+  删除关键词: boolean,
   替换关键词: boolean,
   自定义替换文本: string,
   // 不响应: boolean,
@@ -30,8 +32,10 @@ export interface Config {
 
 export const Config: Schema<Config> = Schema.object({
   关键词: Schema.string().role('textarea', { rows: [3, 100] }).description('用中/英文逗号隔开。'),
-  生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户id，前面的会覆盖后面的。').required(),
-  过滤关键词: Schema.boolean().default(true).description('从消息中删除关键词。'),
+  生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户(私聊=频道)id。').required(),
+  过滤方案: Schema.union(['数组处理', '正则匹配', 'Aho-Corasick']).default('Aho-Corasick'),
+  // 私聊生效: Schema.boolean().default(false).description('私聊也过滤。'),
+  删除关键词: Schema.boolean().default(true).description('从消息中删除关键词。'),
   替换关键词: Schema.boolean().default(false).description('将关键词替换为“*”。'),
   自定义替换文本: Schema.string().default('*').description('只支持字符串。'),
   // 不响应: Schema.boolean().default(false).description('触发关键词不响应消息。'),
@@ -46,14 +50,17 @@ export const Config: Schema<Config> = Schema.object({
 export function apply(ctx: Context, config: Config) {
   const logger = new Logger('filter-keywords')
   logger.debug('开启调试模式。')
-
+  const filterWords = config.删除关键词,
+    filtering = config.过滤方案,
+    replaceWords = config.替换关键词;
+  let time1: any,
+    time2: any;
 
   // 格式化关键词数组
   const keywords = processKeywords(config.关键词);
-
   function processKeywords(inputString: string) {
     if (inputString !== '') {
-      // 使用正则表达式一次性去除所有空格并按逗号分割
+      // 正则去除所有空格并按逗号分割
       const keywordsArray = inputString.replace(/\s+/g, '').split(/[,，]/);
       return keywordsArray;
     } else {
@@ -62,79 +69,147 @@ export function apply(ctx: Context, config: Config) {
     }
   }
 
-  // 过滤关键词
-  function filterKeywords(text: string, keywords: string[]) {
-    const mint = new Mint(keywords, { customCharacter: ' ' });
-    // logger.debug(mint)
-    return mint.filter(text, { replace: true });
-  }
-
-  // 替换关键词
-  function replaceKeywords(text: string, keywords: string[]) {
-    const mint = new Mint(keywords, { customCharacter: `${config.自定义替换文本}` });
-    return mint.filter(text, { replace: true });//.replace(/\*+/g, replaceChar);
-  }
-
   // 提示信息&撤回
   function prompt(result: any, session: Session<never, never, Context>, content: string) {
-    const triggerFlag = result.words.length
-    if (config.触发提示 && triggerFlag > 0) {
-      logger.debug('不执行......')
+
+    // const triggerLength = result.words.length
+    time2 = new Date();
+
+    if (config.触发提示 && flag) {
+      logger.debug('不执行指令......')
       session.send(h('at', { id: session.userId }) + config.自定义提示文本)
       content = ''
-    } else {
+    } else
       content = result.text
-    }
 
-    if (config.撤回消息 && triggerFlag > 0) {
+    if (config.撤回消息 && flag)
       session.bot.deleteMessage(session.channelId, session.messageId)
+
+    // 调试开关
+    if (config.回复调试信息 && flag) {
+      logger.debug('提示......')
+      const debugStr = `处理结果：${result.text}\n耗时：${time2 - time1} ms`
+      session.send(debugStr)
     }
 
+    // 重置
     flag = false;
     return content
   }
+
 
   const table = new Set(config.生效范围);
   let flag = false;
 
   ctx.on('before-parse', (content, session,) => {
-    // const elements = h.select(content, 'text')
-    logger.debug('原始消息: ', session)
-    // 遍历 session 中的属性值，如果在 table1 中找到了匹配项，设置 flag 为 true
-    if (table.has(session?.platform || table.has(session?.guildId) || table.has(session?.channelId) || table.has(session?.userId))) {
+
+    // 遍历 session 中的属性值，如果在 table 中找到了匹配项，设置 flag 为 true
+    if (table.has(session?.userId) || table.has(session?.channelId) || table.has(session?.guildId) || table.has(session?.platform)) {
       flag = true;
     }
 
+    // logger.debug('原始消息: ', session)
     logger.debug('处理前: ', content)
+    time1 = new Date();
 
     if (flag) {
-      if (config.过滤关键词) {
+      if (filterWords) {
         logger.debug('过滤......')
-        const result = filterKeywords(content, keywords)
-        content = prompt(result, session, content)
 
-      } else if (config.替换关键词) {
+
+        if (filtering === 'Aho-Corasick') {
+          const result = ahoFilt(content, keywords)
+          content = prompt(result, session, content)
+        } else if (filtering === '正则匹配') {
+          const result = regFilt(content, keywords)
+          // logger.info(result)
+          content = prompt(result, session, content)
+        } else if (filtering === '数组处理') {
+          const result = arrFilt(content, keywords)
+          content = prompt(result, session, content)
+        }
+
+      }
+      else if (replaceWords) {
         logger.debug('替换......')
-        const result = replaceKeywords(content, keywords)
-        content = prompt(result, session, content)
+
+        if (filtering === 'Aho-Corasick') {
+          const result = ahoRepl(content, keywords)
+          content = prompt(result, session, content)
+        } else if (filtering === '正则匹配') {
+          const result = regRepl(content, keywords)
+          content = prompt(result, session, content)
+        }
       }
     }
 
-    // if (quote?.content) {
-    //   argv.tokens.push({
-    //     content: quote.content,
-    //     quoted: true,
-    //     inters: [],
-    //     terminator: '',
-    //   })
-    // }
-
-
-
     // 解析消息
-    // const { quote, isDirect, stripped: { prefix, appel } } = session
     const argv = Argv.parse(content)
     logger.debug('处理后: ', argv)
+
     return argv;
   }, true)
+
+
+  //// Aho–Corasick
+  // 过滤
+  function ahoFilt(text: string, keywords: string[]) {
+    const mint = new Mint(keywords, { customCharacter: '{)]' });
+    const tempResult = mint.filter(text, { replace: true });
+    tempResult.text = tempResult.text.replace(/\{\)\]/g, '');
+    return tempResult;
+  }
+  // 替换
+  function ahoRepl(text: string, keywords: string[]) {
+    const mint = new Mint(keywords, { customCharacter: `${config.自定义替换文本}` });
+    return mint.filter(text, { replace: true });
+  }
+
+
+
+  //// 正则
+  function regFilt(text: string, keywords: string[]) {
+    // 正则分割文本，保留符号
+    const sentences = text.split(/([^\u4e00-\u9fa5a-zA-Z0-9]+)/).filter(Boolean);
+    // 数组每两个元素拼接
+    const mergedSentences = [];
+    for (let i = 0; i < sentences.length; i += 2) {
+      const mergedSentence = sentences[i] + (sentences[i + 1] || ''); // 若奇数个元素，最后一个元素为空字符串
+      mergedSentences.push(mergedSentence);
+    }
+    // 过滤
+    const filteredSentences = mergedSentences.filter(sentence => {
+      return !keywords.some(keyword => new RegExp(keyword, 'gi').test(sentence));
+    });
+    // 拼接
+    const filteredText = filteredSentences.join('');
+    return { text: filteredText };
+  }
+  
+  function regRepl(text: string, keywords: string[]) {
+    // 替换关键词
+    const filteredText = keywords.reduce((acc, keyword) => {
+      const regex = new RegExp(`\\b${keyword}\\b`, 'gi');
+      return acc.replace(regex, '*'.repeat(keyword.length));
+    }, text);
+    // 返回替换后的文本
+    return { text: filteredText };
+  }
+  
+  
+
+  //// 普通数组
+  function arrFilt(text: string, keywords: string[]) {
+    // 切片
+    const sentences = text.split(' ');
+    // 过滤
+    const filteredSentences = sentences.filter(sentence => {
+      // 判断句子是否包含关键词
+      return !keywords.some(keyword => sentence.includes(keyword));
+    });
+    // 复原
+    const filteredText = filteredSentences.join(' ');
+    // 返回过滤后的文本
+    return { text: filteredText };
+  }
 }
