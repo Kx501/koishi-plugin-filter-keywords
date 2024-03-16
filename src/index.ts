@@ -33,7 +33,7 @@ export interface Config {
 export const Config: Schema<Config> = Schema.object({
   关键词: Schema.string().role('textarea', { rows: [3, 100] }).description('用中/英文逗号隔开。'),
   生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户(私聊=频道)id。').required(),
-  过滤方案: Schema.union(['数组处理', '正则匹配', 'Aho-Corasick']).default('Aho-Corasick'),
+  过滤方案: Schema.union(['正则匹配']).default('正则匹配'), //, '数组处理', 'Aho-Corasick'
   // 私聊生效: Schema.boolean().default(false).description('私聊也过滤。'),
   删除关键词: Schema.boolean().default(true).description('从消息中删除关键词。'),
   替换关键词: Schema.boolean().default(false).description('将关键词替换为“*”。'),
