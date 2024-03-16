@@ -4,7 +4,7 @@
   "contributors": [
     "Kxy051 <a2483654847@gmail.com>"
   ],
-  "version": "1.0.0-alpha.3",
+  "version": "1.0.0-alpha.4",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
