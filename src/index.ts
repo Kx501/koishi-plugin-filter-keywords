@@ -33,7 +33,7 @@ export interface Config {
 export const Config: Schema<Config> = Schema.object({
   关键词: Schema.string().role('textarea', { rows: [3, 100] }).description('用中/英文逗号隔开。'),
   生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户(私聊=频道)id。').required(),
-  过滤方案: Schema.union(['正则匹配','无']).default('正则匹配'), //, '数组处理', 'Aho-Corasick'
+  过滤方案: Schema.union(['正则匹配', '无']).default('正则匹配'), //, '数组处理', 'Aho-Corasick'
   // 私聊生效: Schema.boolean().default(false).description('私聊也过滤。'),
   删除关键词: Schema.boolean().default(true).description('从消息中删除关键词。'),
   替换关键词: Schema.boolean().default(false).description('将关键词替换为“*”。'),
@@ -190,24 +190,25 @@ export function apply(ctx: Context, config: Config) {
 
   //// 正则
   function regFilt(text: string, keywords: string[]) {
-    // 正则分割文本，保留符号
-    const sentences = text.split(/([^\u4e00-\u9fa5a-zA-Z0-9]+)/).filter(Boolean);
-    // 每两个元素拼接
-    const mergedSentences = sentences.reduce((acc, curr, index) => {
-      if (index % 2 === 0) {
-        const mergedSentence = curr + (sentences[index + 1] || ''); // 若奇数个元素，最后一个元素为空字符串
-        acc.push(mergedSentence);
-      }
-      return acc;
-    }, []);
-    // 过滤
-    const filteredSentences = mergedSentences.filter(sentence => {
+    // 分割文本，保留符号
+    const sentences = text.split(/([^\u4e00-\u9fa5a-zA-Z0-9]+)/).filter(Boolean); // 过滤空字符串
+    // 过滤包含关键词的部分
+    const filteredSentences = sentences.filter(sentence => {
+      // 关键词匹配
       return !keywords.some(keyword => new RegExp(keyword, 'gi').test(sentence));
     });
-    // 拼接
+    // 移除多余的符号
+    for (let i = 0; i < filteredSentences.length - 1; i++) {
+      if (filteredSentences[i] === ' ' && filteredSentences[i - 1] === filteredSentences[i + 1]) {
+        filteredSentences.splice(i, 1);
+        i--; // 因为删除了一个元素，需要重新检查当前位置
+      }
+    }
+    // 将过滤结果拼接为文本
     const filteredText = filteredSentences.join('');
     return { text: filteredText };
   }
+
 
   function regRepl(text: string, keywords: string[]) {
     // 替换关键词
