@@ -1,5 +1,5 @@
 import { Context, Schema, h, Dict, Session, Logger, Argv, Time } from 'koishi'
-import Mint from 'mint-filter'
+// import Mint from 'mint-filter'
 
 
 export const name = 'filter-keywords'
@@ -134,13 +134,13 @@ export function apply(ctx: Context, config: Config) {
       else if (replaceWords) {
         logger.debug('替换......')
 
-        if (filtering === 'Aho-Corasick') {
-          const result = ahoRepl(content, keywords)
-          content = prompt(result, session, content)
-        } else if (filtering === '正则匹配') {
-          const result = regRepl(content, keywords)
-          content = prompt(result, session, content)
-        }
+        // if (filtering === 'Aho-Corasick') {
+        //   const result = ahoRepl(content, keywords)
+        //   content = prompt(result, session, content)
+        // } else if (filtering === '正则匹配') {
+        //   const result = regRepl(content, keywords)
+        //   content = prompt(result, session, content)
+        // }
       }
     }
 
@@ -168,23 +168,23 @@ export function apply(ctx: Context, config: Config) {
     }, []);
 
     // 使用 Aho-Corasick 算法验证每个句子
-    const mint = new Mint(keywords);
-    const filteredSentences = mergedSentences.filter(sentence => {
-      const status = mint.verify(sentence);
-      return status; // 返回 true 表示句子通过验证
-    });
+    // const mint = new Mint(keywords);
+    // const filteredSentences = mergedSentences.filter(sentence => {
+    //   const status = mint.verify(sentence);
+    //   return status; // 返回 true 表示句子通过验证
+    // });
 
     // 将过滤后的句子拼接为文本
-    const filteredText = filteredSentences.join('');
+    // const filteredText = filteredSentences.join('');
     // 返回过滤后的文本
-    return { text: filteredText };
+    // return { text: filteredText };
   }
 
   // 替换
-  function ahoRepl(text: string, keywords: string[]) {
-    const mint = new Mint(keywords, { customCharacter: `${config.自定义替换文本}` });
-    return mint.filter(text, { replace: true });
-  }
+  // function ahoRepl(text: string, keywords: string[]) {
+  //   const mint = new Mint(keywords, { customCharacter: `${config.自定义替换文本}` });
+  //   return mint.filter(text, { replace: true });
+  // }
 
 
 
