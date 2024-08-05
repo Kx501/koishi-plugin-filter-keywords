@@ -1,10 +1,10 @@
 {
-  "name": "@kxy051/koishi-plugin-filter-keywords",
+  "name": "@kx501/koishi-plugin-filter-keywords",
   "description": "对解析前的消息进行关键词过滤。",
   "contributors": [
-    "Kxy051 <a2483654847@gmail.com>"
+    "Kx501 <x501@foxmail.com>"
   ],
-  "version": "1.0.0-alpha.7",
+  "version": "1.0.0-beta1",
   "main": "lib/index.js",
   "typings": "lib/index.d.ts",
   "files": [
@@ -12,10 +12,10 @@
     "dist"
   ],
   "license": "MIT",
-  "homepage": "https://github.com/Kxy051/koishi-plugin-filter-keywords",
+  "homepage": "https://github.com/Kx501/koishi-plugin-filter-keywords",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Kxy051/koishi-plugin-filter-keywords.git"
+    "url": "git+https://github.com/Kx501/koishi-plugin-filter-keywords.git"
   },
   "keywords": [
     "chatbot",
@@ -23,8 +23,7 @@
     "plugin"
   ],
   "peerDependencies": {
-    "koishi": "^4.17.3",
-    "mint-filter": "^4.0.3"
+    "koishi": "^4.17.9"
   },
   "koishi": {
     "preview": true,
