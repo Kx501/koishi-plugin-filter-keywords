@@ -16,34 +16,25 @@ export interface Config {
   关键词: string,
   生效范围: any,
   过滤方案: any,
-  // 私聊生效: boolean,
   删除关键词: boolean,
   替换关键词: boolean,
   自定义替换文本: string,
-  // 不响应: boolean,
   触发提示: boolean,
   撤回消息: boolean,
   自定义提示文本: string,
-  // 排除的指令: any,
-  // 多位置支持: boolean,
-  // 参数位置: any,
   回复调试信息: boolean,
 }
 
 export const Config: Schema<Config> = Schema.object({
   关键词: Schema.string().role('textarea', { rows: [3, 100] }).description('用中/英文逗号隔开。'),
   生效范围: Schema.array(String).role('table').description('可以是平台/群组/频道/用户(私聊=频道)id。').required(),
-  过滤方案: Schema.union(['正则匹配', '无']).default('正则匹配'), //, '数组处理', 'Aho-Corasick'
-  // 私聊生效: Schema.boolean().default(false).description('私聊也过滤。'),
+  过滤方案: Schema.union(['正则匹配', '无']).default('正则匹配'),
   删除关键词: Schema.boolean().default(true).description('从消息中删除关键词。'),
   替换关键词: Schema.boolean().default(false).description('将关键词替换为“*”。'),
   自定义替换文本: Schema.string().default('*').description('只支持字符串。'),
-  // 不响应: Schema.boolean().default(false).description('触发关键词不响应消息。'),
   触发提示: Schema.boolean().default(false).description('触发后不执行指令，并且提示。'),
   撤回消息: Schema.boolean().default(false).description('需要管理员权限。'),
   自定义提示文本: Schema.string().default('触发敏感词了哦~').description('自定义提示消息。'),
-  // 多位置支持: Schema.boolean().default(false).description('支持传入指令的参数有多个空格隔开的情况。'),
-  // 参数位置: Schema.boolean().default(false).description('触发后提示。'),
   回复调试信息: Schema.boolean().default(false).description('机器人会回复触发的关键词，以及处理后的文本。'),
 })
 
@@ -133,14 +124,6 @@ export function apply(ctx: Context, config: Config) {
       }
       else if (replaceWords) {
         logger.debug('替换......')
-
-        // if (filtering === 'Aho-Corasick') {
-        //   const result = ahoRepl(content, keywords)
-        //   content = prompt(result, session, content)
-        // } else if (filtering === '正则匹配') {
-        //   const result = regRepl(content, keywords)
-        //   content = prompt(result, session, content)
-        // }
       }
     }
 
@@ -166,26 +149,7 @@ export function apply(ctx: Context, config: Config) {
       }
       return acc;
     }, []);
-
-    // 使用 Aho-Corasick 算法验证每个句子
-    // const mint = new Mint(keywords);
-    // const filteredSentences = mergedSentences.filter(sentence => {
-    //   const status = mint.verify(sentence);
-    //   return status; // 返回 true 表示句子通过验证
-    // });
-
-    // 将过滤后的句子拼接为文本
-    // const filteredText = filteredSentences.join('');
-    // 返回过滤后的文本
-    // return { text: filteredText };
   }
-
-  // 替换
-  // function ahoRepl(text: string, keywords: string[]) {
-  //   const mint = new Mint(keywords, { customCharacter: `${config.自定义替换文本}` });
-  //   return mint.filter(text, { replace: true });
-  // }
-
 
 
   //// 正则
